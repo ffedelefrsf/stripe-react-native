@@ -37,7 +37,7 @@ class StripeSdkModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
 
   private var confirmPromise: Promise? = null
   private var confirmPaymentClientSecret: String? = null
-  private var presentNativePayForPaymentMethodPromise: Promise? = null
+  private var createNativePayPaymentMethodPromise: Promise? = null
 
   private var paymentSheetFragment: PaymentSheetFragment? = null
   private var googlePayFragment: GooglePayFragment? = null
@@ -58,9 +58,9 @@ class StripeSdkModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
       if (::stripe.isInitialized) {
         when (requestCode) {
           GooglePayRequestHelper.LOAD_PAYMENT_DATA_REQUEST_CODE -> {
-            presentNativePayForPaymentMethodPromise?.let {
+            createNativePayPaymentMethodPromise?.let {
               GooglePayRequestHelper.handleGooglePaymentMethodResult(resultCode, data, stripe, it)
-              presentNativePayForPaymentMethodPromise = null
+              createNativePayPaymentMethodPromise = null
             } ?: run { Log.d("StripeReactNative", "No promise was found, Google Pay result went unhandled,") }
           }
           else -> {
@@ -581,12 +581,12 @@ class StripeSdkModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
   }
 
   @ReactMethod
-  fun presentNativePayForPaymentMethod(params: ReadableMap, promise: Promise) {
+  fun createNativePayPaymentMethod(params: ReadableMap, promise: Promise) {
     val googlePayParams: ReadableMap = params.getMap("googlePay") ?: run {
       promise.resolve(createError(GooglePayErrorType.Failed.toString(), "You must provide the `googlePay` parameter."))
       return
     }
-    presentNativePayForPaymentMethodPromise = promise
+    createNativePayPaymentMethodPromise = promise
     getCurrentActivityOrResolveWithError(promise)?.let {
       val request = GooglePayRequestHelper.createPaymentRequest(
         it,
