@@ -105,6 +105,11 @@ type NativeStripeSdkType = {
   collectFinancialConnectionsAccounts(
     clientSecret: string
   ): Promise<FinancialConnections.SessionResult>;
+
+  // Native Pay
+  isNativePaySupported(something?: any): Promise<boolean>;
+  presentNativePayForPaymentMethod(something: any): Promise<any>;
+  dismissApplePay(): Promise<boolean>;
 };
 
 const { StripeSdk } = NativeModules;

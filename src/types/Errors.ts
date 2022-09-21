@@ -84,3 +84,9 @@ export enum CollectBankAccountError {
   Failed = 'Failed',
   Unknown = 'Unknown',
 }
+
+export enum NativePayError {
+  Canceled = 'Canceled',
+  Failed = 'Failed',
+  Unknown = 'Unknown',
+}
