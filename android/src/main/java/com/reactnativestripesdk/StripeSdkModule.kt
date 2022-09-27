@@ -13,6 +13,7 @@ import com.reactnativestripesdk.utils.*
 import com.stripe.android.*
 import com.stripe.android.core.ApiVersion
 import com.stripe.android.core.AppInfo
+import com.stripe.android.googlepaylauncher.GooglePayLauncher
 import com.stripe.android.model.*
 import com.stripe.android.payments.bankaccount.CollectBankAccountConfiguration
 import com.stripe.android.view.AddPaymentMethodActivityStarter
@@ -44,13 +45,15 @@ class StripeSdkModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
   private var paymentLauncherFragment: PaymentLauncherFragment? = null
   private var collectBankAccountLauncherFragment: CollectBankAccountLauncherFragment? = null
   private var financialConnectionsSheetFragment: FinancialConnectionsSheetFragment? = null
+  private var googlePayLauncherFragment: GooglePayLauncherFragment? = null
   private val allFragments: List<Fragment?>
     get() = listOf(
       paymentSheetFragment,
       googlePayFragment,
       paymentLauncherFragment,
       collectBankAccountLauncherFragment,
-      financialConnectionsSheetFragment
+      financialConnectionsSheetFragment,
+      googlePayLauncherFragment
     )
 
   private val mActivityEventListener = object : BaseActivityEventListener() {
@@ -564,6 +567,62 @@ class StripeSdkModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
       googlePayFragment?.presentForSetupIntent(clientSecret, currencyCode, promise)
     } else {
       googlePayFragment?.presentForPaymentIntent(clientSecret, promise)
+    }
+  }
+
+  @ReactMethod
+  fun confirmNativePay(clientSecret: String, params: ReadableMap, isPaymentIntent: Boolean, promise: Promise) {
+    if (!::stripe.isInitialized) {
+      promise.resolve(createMissingInitError())
+      return
+    }
+
+    val googlePayParams: ReadableMap = params.getMap("googlePay") ?: run {
+      promise.resolve(createError(GooglePayErrorType.Failed.toString(), "You must provide the `googlePay` parameter."))
+      return
+    }
+
+    googlePayLauncherFragment = GooglePayLauncherFragment().also {
+      it.presentGooglePaySheet(
+        clientSecret,
+        if (isPaymentIntent) GooglePayLauncherFragment.Mode.ForPayment else GooglePayLauncherFragment.Mode.ForSetup,
+        googlePayParams,
+        reactApplicationContext
+      ) { launcherResult, errorMap ->
+        if (errorMap != null) {
+          promise.resolve(errorMap)
+        } else if (launcherResult != null) {
+          when (launcherResult) {
+            GooglePayLauncher.Result.Completed -> {
+              if (isPaymentIntent) {
+                stripe.retrievePaymentIntent(clientSecret, stripeAccountId,  object : ApiResultCallback<PaymentIntent> {
+                  override fun onError(e: Exception) {
+                    promise.resolve(createResult("paymentIntent", WritableNativeMap()))
+                  }
+                  override fun onSuccess(result: PaymentIntent) {
+                    promise.resolve(createResult("paymentIntent", mapFromPaymentIntentResult(result)))
+                  }
+                })
+              } else {
+                stripe.retrieveSetupIntent(clientSecret, stripeAccountId,  object : ApiResultCallback<SetupIntent> {
+                  override fun onError(e: Exception) {
+                    promise.resolve(createResult("setupIntent", WritableNativeMap()))
+                  }
+                  override fun onSuccess(result: SetupIntent) {
+                    promise.resolve(createResult("setupIntent", mapFromSetupIntentResult(result)))
+                  }
+                })
+              }
+            }
+            GooglePayLauncher.Result.Canceled -> {
+              promise.resolve(createError(GooglePayErrorType.Canceled.toString(), "Google Pay has been canceled"))
+            }
+            is GooglePayLauncher.Result.Failed -> {
+              promise.resolve(createError(GooglePayErrorType.Failed.toString(), launcherResult.error))
+            }
+          }
+        }
+      }
     }
   }
 
