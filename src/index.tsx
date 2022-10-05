@@ -35,6 +35,10 @@ export {
   AddToWalletButton,
   Props as AddToWalletButtonProps,
 } from './components/AddToWalletButton';
+export {
+  NativePayButton,
+  Props as NativePayButtonProps,
+} from './components/NativePayButton';
 
 export * from './functions';
 
