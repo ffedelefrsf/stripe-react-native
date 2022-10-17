@@ -367,9 +367,9 @@ export function useStripe() {
 
   const _updateApplePaySheet = useCallback(
     async (
-      summaryItems: Array<ApplePay.CartSummaryItem>,
-      shippingMethods: Array<ApplePay.ShippingMethod>,
-      errors: Array<ApplePay.ApplePaySheetError>
+      summaryItems: Array<NativePay.CartSummaryItem>,
+      shippingMethods: Array<NativePay.ShippingMethod>,
+      errors: Array<NativePay.ApplePaySheetError>
     ): Promise<{
       error?: StripeError<NativePayError>;
     }> => {
@@ -380,7 +380,7 @@ export function useStripe() {
 
   const _addOnApplePayShippingMethodSelectedListener = useCallback(
     (
-      listener: (event: { shippingMethod: ApplePay.ShippingMethod }) => void // todo unpack event
+      listener: (event: { shippingMethod: NativePay.ShippingMethod }) => void // todo unpack event
     ): EmitterSubscription => {
       return addOnApplePayShippingMethodSelectedListener(listener);
     },
@@ -389,7 +389,7 @@ export function useStripe() {
 
   const _addOnApplePayShippingContactSelectedListener = useCallback(
     (
-      listener: (event: { shippingContact: ApplePay.ShippingContact }) => void
+      listener: (event: { shippingContact: NativePay.ShippingContact }) => void
     ): EmitterSubscription => {
       return addOnApplePayShippingContactSelectedListener(listener);
     },
